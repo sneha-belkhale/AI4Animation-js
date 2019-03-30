@@ -6,7 +6,7 @@ import {
   getRelativePositionTo, getRelativeDirectionTo, getRelativePositionFrom, getRelativeDirectionFrom,
 } from './Utils';
 
-import GroundShader from './GroundShader';
+import GroundShader from './shaders/GroundShader';
 
 
 const THREE = require('three');
@@ -22,7 +22,7 @@ const FRAMERATE = 50;
 const UP = new THREE.Vector3(0, 1, 0);
 
 let scene; let camera; let renderer; let trajectory; let NN; let stats; let wolf; let
-  keyHoldTime = 0;
+  keyHoldTime = 0; let light;
 
 const temps = {
   v1: new THREE.Vector3(),
@@ -48,12 +48,19 @@ export default async function initWebScene() {
 
   /** BASIC SCENE SETUP * */
   // just adding a ground
-  const groundPlane = new THREE.Mesh(new THREE.PlaneGeometry(50, 50), new THREE.ShaderMaterial({
-    vertexShader: GroundShader.vertexShader,
-    fragmentShader: GroundShader.fragmentShader,
-  }));
+  const groundPlane = new THREE.Mesh(new THREE.PlaneGeometry(50, 50),
+    new THREE.MeshPhysicalMaterial());
+  groundPlane.material.onBeforeCompile = function (shader) {
+    shader.vertexShader = GroundShader.vertexShader;
+    shader.fragmentShader = GroundShader.fragmentShader;
+  };
   scene.add(groundPlane);
   groundPlane.rotateX(-Math.PI / 2);
+
+  light = new THREE.PointLight(0xffffff, 2, 8);
+
+  light.position.y = 5;
+  scene.add(light);
 
   /** AI ANIMATION SETUP * */
   // create wolf
@@ -136,9 +143,15 @@ function update() {
   camera.position.copy(campos).add(camforward.multiplyScalar(5));
   camera.position.y = 1.6;
   camera.lookAt(campos);
+  light.position.x = campos.x;
+  light.position.z = campos.z;
 
   requestAnimationFrame(update);
   renderer.render(scene, camera);
+
+  if (!wolf.ready) {
+    return;
+  }
 
   const currentRoot = trajectory.getMatrixFor(RootPointIndex);
   currentRoot.elements[1 * 4 + 3] = 0;
@@ -275,5 +288,6 @@ function update() {
     wolf.UPS[i].copy(ups);
     wolf.VELOCITIES[i].copy(vel);
   }
+  wolf.update();
   start += JOINT_DIM_OUT * wolf.POSITIONS.length;
 }
