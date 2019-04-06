@@ -14,7 +14,7 @@ export default class Trajectory {
         blending: THREE.AdditiveBlending,
       });
       const obj = new THREE.Mesh(pathPointGeo, pathPointMat);
-      obj.visible = false;
+      // obj.visible = false;
       obj.position.set(0, 0, 0);
       obj.velocity = new THREE.Vector3(0, 0, 0);
       obj.styles = [1, 0, 0, 0, 0, 0];
@@ -50,6 +50,18 @@ export default class Trajectory {
     forward.set(0, 0, 1);
     forward.applyQuaternion(this.points[i].quaternion);
     return forward;
+  }
+
+  getLeft(i, tmp) {
+    let left;
+    if (tmp) {
+      left = tmp;
+    } else {
+      left = new THREE.Vector3();
+    }
+    left.set(1, 0, 0);
+    left.applyQuaternion(this.points[i].quaternion);
+    return left;
   }
 
   getVelocity(i, tmp) {

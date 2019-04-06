@@ -138,10 +138,11 @@ export default async function initWebScene() {
 
 function update() {
   const campos = trajectory.getPosition(RootPointIndex);
-  const camforward = trajectory.getDirection(RootPointIndex);
+  const camLeft = trajectory.getLeft(RootPointIndex);
+  const camForward = trajectory.getDirection(RootPointIndex);
 
-  camera.position.copy(campos).add(camforward.multiplyScalar(5));
-  camera.position.y = 1.6;
+  camera.position.copy(campos).sub(camLeft.multiplyScalar(5));
+  camera.position.y = 2.6;
   camera.lookAt(campos);
   light.position.x = campos.x;
   light.position.z = campos.z;
