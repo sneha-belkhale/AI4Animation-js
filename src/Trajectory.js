@@ -14,7 +14,7 @@ export default class Trajectory {
         blending: THREE.AdditiveBlending,
       });
       const obj = new THREE.Mesh(pathPointGeo, pathPointMat);
-      // obj.visible = false;
+      obj.visible = false;
       obj.position.set(0, 0, 0);
       obj.velocity = new THREE.Vector3(0, 0, 0);
       obj.styles = [1, 0, 0, 0, 0, 0];

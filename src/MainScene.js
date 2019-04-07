@@ -18,11 +18,11 @@ const JOINT_DIM_IN = 12;
 const JOINT_DIM_OUT = 12;
 const TRAJECTORY_DIM_OUT = 6;
 const RootPointIndex = 6;
-const FRAMERATE = 50;
+const FRAMERATE = 60;
 const UP = new THREE.Vector3(0, 1, 0);
 
 let scene; let camera; let renderer; let trajectory; let NN; let stats; let wolf; let
-  keyHoldTime = 0; let light;
+  keyHoldTime = 0; let light; let lastTime = 0; let keyDownEvent;
 
 const temps = {
   v1: new THREE.Vector3(),
@@ -40,7 +40,7 @@ export default async function initWebScene() {
   camera.position.set(0, 0, 2);
   scene.add(camera);
   // set up controls
-  const controls = new OrbitControls(camera);
+  // const controls = new OrbitControls(camera);
   // restrict movement to stay within the room
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -73,73 +73,86 @@ export default async function initWebScene() {
   // Trajectory
   trajectory = new Trajectory(scene);
 
+  // stats
   stats = new Stats();
   stats.showPanel(0);
   document.body.appendChild(stats.dom);
-  let lastTime = 0;
+
+  // key events
   window.addEventListener('keydown', (event) => {
-    if (lastTime === 0) {
-      lastTime = Date.now();
-      return;
-    }
-    const diff = (Date.now() - lastTime) / 1000;
-    lastTime = Date.now();
-
-    keyHoldTime += 0.01 * diff;
-
-    const rootQuat = trajectory.points[RootPointIndex].quaternion;
-    let quat;
-    if (event.key === 'w') {
-      quat = null;
-    } else if (event.key === 'a') {
-      quat = new THREE.Quaternion().setFromAxisAngle(UP, 3 / FRAMERATE);
-    } else if (event.key === 'd') {
-      quat = new THREE.Quaternion().setFromAxisAngle(UP, -3 / FRAMERATE);
-    } else {
-      return;
-    }
-
-    for (let i = RootPointIndex; i < POINT_SAMPLES; i += 1) {
-      const prevPos = trajectory.points[i - 1].position;
-      const prevQuat = trajectory.points[i - 1].quaternion;
-      trajectory.points[i].styles[1] = 1;
-      trajectory.points[i].styles[0] = 0;
-      trajectory.points[i].styles[4] = 0;
-      if (!quat) {
-        trajectory.points[i].quaternion.copy(rootQuat);
-      } else {
-        trajectory.points[i].quaternion.copy(prevQuat).premultiply(quat);
-      }
-      const forward = trajectory.getDirection(i);
-      let inc = 0.04 + keyHoldTime;
-      if (inc > 0.099) {
-        inc = 0.14;
-      }
-      trajectory.points[i].position.copy(prevPos).add(forward.multiplyScalar(inc));
-      trajectory.points[i].velocity.copy(forward).multiplyScalar(inc * 46);
-      trajectory.points[i].speed = inc * 46;
-    }
+    keyDownEvent = event;
   });
-
+  window.addEventListener('keyup', resetTrajectory);
   update();
-  window.addEventListener('keyup', () => {
-    keyHoldTime = 0;
-    lastTime = 0;
-    for (let i = RootPointIndex; i < POINT_SAMPLES; i += 1) {
-      // TODO: make this less abrupt
-      trajectory.points[i].styles[1] = 0;
-      trajectory.points[i].styles[0] = 1;
-      trajectory.points[i].styles[4] = 0;
-      trajectory.points[i].velocity.set(0, 0, 0);
-      trajectory.points[i].speed = 0;
+}
+
+function resetTrajectory() {
+  keyHoldTime = 0;
+  lastTime = 0;
+  keyDownEvent = null;
+  for (let i = RootPointIndex; i < POINT_SAMPLES; i += 1) {
+    // TODO: make this less abrupt
+    trajectory.points[i].styles[1] = 0;
+    trajectory.points[i].styles[0] = 1;
+    trajectory.points[i].styles[4] = 0;
+    trajectory.points[i].velocity.set(0, 0, 0);
+    trajectory.points[i].speed = 0;
+  }
+}
+
+function predictTrajectory() {
+  if (lastTime === 0) {
+    lastTime = Date.now();
+    return;
+  }
+
+  const diff = (Date.now() - lastTime) / 1000;
+  lastTime = Date.now();
+
+  keyHoldTime += 0.01 * diff;
+
+  const rootQuat = trajectory.points[RootPointIndex].quaternion;
+
+  let quat;
+  if (keyDownEvent.key === 'w') {
+    quat = null;
+  } else if (keyDownEvent.key === 'a') {
+    quat = new THREE.Quaternion().setFromAxisAngle(UP, 1 / FRAMERATE);
+  } else if (keyDownEvent.key === 'd') {
+    quat = new THREE.Quaternion().setFromAxisAngle(UP, -1 / FRAMERATE);
+  } else {
+    return;
+  }
+
+  for (let i = RootPointIndex; i < POINT_SAMPLES; i += 1) {
+    const prevPos = trajectory.points[i - 1].position;
+    const prevQuat = trajectory.points[i - 1].quaternion;
+    trajectory.points[i].styles[1] = Math.min(trajectory.points[i].styles[1] + 0.1 * diff * i, 1);
+    trajectory.points[i].styles[0] = Math.max(trajectory.points[i].styles[0] - 0.1 * diff * i, 0);
+    trajectory.points[i].styles[4] = 0;
+    if (!quat) {
+      trajectory.points[i].quaternion.copy(rootQuat);
+    } else {
+      trajectory.points[i].quaternion.copy(prevQuat).premultiply(quat);
     }
-  });
+    const forward = trajectory.getDirection(i);
+    let inc = 0.04 + keyHoldTime;
+    if (inc > 0.099) {
+      inc = 0.12;
+    }
+    trajectory.points[i].position.copy(prevPos).add(forward.multiplyScalar(inc));
+    trajectory.points[i].velocity.copy(forward).multiplyScalar(inc * (60 + i / 2));
+    trajectory.points[i].speed = inc * (60 + i / 2);
+  }
 }
 
 function update() {
+  if (keyDownEvent) {
+    predictTrajectory();
+  }
   const campos = trajectory.getPosition(RootPointIndex);
   const camLeft = trajectory.getLeft(RootPointIndex);
-  const camForward = trajectory.getDirection(RootPointIndex);
+  // const camForward = trajectory.getDirection(RootPointIndex);
 
   camera.position.copy(campos).sub(camLeft.multiplyScalar(5));
   camera.position.y = 2.6;
@@ -153,6 +166,7 @@ function update() {
   if (!wolf.ready) {
     return;
   }
+
 
   const currentRoot = trajectory.getMatrixFor(RootPointIndex);
   currentRoot.elements[1 * 4 + 3] = 0;
@@ -181,8 +195,8 @@ function update() {
   const previousRoot = trajectory.getMatrixFor(RootPointIndex - 1);
   previousRoot.elements[1 * 4 + 3] = 0;
   // //Input Previous Bone Positions / Velocities
-  for (let i = 0; i < wolf.POSITIONS.length; i += 1) {
-    temps.v1.copy(wolf.POSITIONS[i].position);
+  for (let i = 0; i < wolf.BONES.length; i += 1) {
+    temps.v1.copy(wolf.BONES[i].position);
     temps.v2.copy(wolf.FORWARDS[i]);
     temps.v3.copy(wolf.UPS[i]);
     temps.v4.copy(wolf.VELOCITIES[i]);
@@ -205,7 +219,7 @@ function update() {
     NN.setInput(start + i * JOINT_DIM_IN + 10, vel.y);
     NN.setInput(start + i * JOINT_DIM_IN + 11, vel.z);
   }
-  start += JOINT_DIM_IN * wolf.POSITIONS.length;
+  start += JOINT_DIM_IN * wolf.BONES.length;
 
   stats.begin();
   NN.predict();
@@ -231,9 +245,9 @@ function update() {
   );
 
   const rootMotion = new THREE.Vector3(
-    NN.getOutput(TRAJECTORY_DIM_OUT * 6 + JOINT_DIM_OUT * wolf.POSITIONS.length + 0),
-    NN.getOutput(TRAJECTORY_DIM_OUT * 6 + JOINT_DIM_OUT * wolf.POSITIONS.length + 1),
-    NN.getOutput(TRAJECTORY_DIM_OUT * 6 + JOINT_DIM_OUT * wolf.POSITIONS.length + 2),
+    NN.getOutput(TRAJECTORY_DIM_OUT * 6 + JOINT_DIM_OUT * wolf.BONES.length + 0),
+    NN.getOutput(TRAJECTORY_DIM_OUT * 6 + JOINT_DIM_OUT * wolf.BONES.length + 1),
+    NN.getOutput(TRAJECTORY_DIM_OUT * 6 + JOINT_DIM_OUT * wolf.BONES.length + 2),
   );
   rootMotion.multiplyScalar(updates / FRAMERATE);
   const translation = new THREE.Vector3(rootMotion.x, 0, rootMotion.z);
@@ -262,7 +276,7 @@ function update() {
   start = 0;
   start += TRAJECTORY_DIM_OUT * 6;
   // Compute Posture
-  for (let i = 0; i < wolf.POSITIONS.length; i += 1) {
+  for (let i = 0; i < wolf.BONES.length; i += 1) {
     const pos = getRelativePositionFrom(temps.v1.set(
       NN.getOutput(start + i * JOINT_DIM_OUT + 0),
       NN.getOutput(start + i * JOINT_DIM_OUT + 1),
@@ -283,12 +297,12 @@ function update() {
       NN.getOutput(start + i * JOINT_DIM_OUT + 10),
       NN.getOutput(start + i * JOINT_DIM_OUT + 11),
     ), currentRoot);
-    wolf.POSITIONS[i].position.add(vel.clone().multiplyScalar(1 / FRAMERATE));
-    wolf.POSITIONS[i].position.add(pos).multiplyScalar(1 / 2);
+    wolf.BONES[i].position.add(vel.clone().multiplyScalar(1 / FRAMERATE));
+    wolf.BONES[i].position.add(pos).multiplyScalar(1 / 2);
     wolf.FORWARDS[i].copy(forw);
     wolf.UPS[i].copy(ups);
     wolf.VELOCITIES[i].copy(vel);
   }
+  start += JOINT_DIM_OUT * wolf.BONES.length;
   wolf.update();
-  start += JOINT_DIM_OUT * wolf.POSITIONS.length;
 }
