@@ -5,8 +5,9 @@
   "homepage": "./",
   "dependencies": {
     "cwise": "^1.0.10",
+    "postprocessing": "^6.1.1",
     "stats-js": "^1.0.0",
-    "three": "^0.101.1",
+    "three": "^0.103.0",
     "three-orbit-controls": "^82.1.0"
   },
   "scripts": {

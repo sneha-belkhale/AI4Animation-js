@@ -1,10 +1,11 @@
+import * as THREE from 'three';
 import FBXLoader from './libs/FBXLoader';
-import { setQuaternionFromDirection } from './Utils';
+import { setQuaternionFromDirection, addScalarMultiple } from './Utils';
 import { setZForward } from './AxisUtils';
 
-const THREE = require('three');
 
-const DEBUG = true;
+const DEBUG = false;
+const MODEL_ROOT_IDX = 24;
 
 const WOLFBONES = [
   [0.0, 1.5, 0.0],
@@ -103,6 +104,8 @@ export default class Wolf {
     this.UPS = UPS;
     this.scene = scene;
     this.bones = [];
+    // this root pos is to handle the skeleton root from the houdini model, which is not part of the NN bones array
+    this.rootWorldPos = new THREE.Vector3();
 
     this.tmps = {
       v1: new THREE.Vector3(),
@@ -117,7 +120,7 @@ export default class Wolf {
 
       const boneMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.3, index / 27, 0.8) });
       const bone = new THREE.Mesh(boneGeo, boneMat);
-      bone.position.set(bonePos[0], bonePos[1], bonePos[2]);
+      bone.position.set(bonePos[0], bonePos[1] - 1, bonePos[2]);
       this.BONES.push(bone);
       scene.add(bone);
 
@@ -128,18 +131,35 @@ export default class Wolf {
 
     // add the real wolf
     const fbxLoader = new FBXLoader();
-    fbxLoader.load(require('./assets/dog.bin.fbx'), (obj) => {
+    fbxLoader.load(require('./assets/dog_light_v012.fbx'), (obj) => {
       this.wolf = obj.children[0];
       this.boneGroup = obj.children[1];
-      this.boneGroup.updateMatrixWorld();
+      this.boneGroup.updateMatrixWorld(true);
       scene.add(this.wolf);
       scene.add(this.boneGroup);
-
       this.root = this.boneGroup.children[0];
+      this.root.updateMatrixWorld(true);
+
       // adjustments
+      this.wolf.material = new THREE.MeshPhysicalMaterial({
+        emissive: new THREE.Color(0xffffff),
+        emissiveIntensity: 10,
+        emissiveMap: new THREE.TextureLoader().load(require('./assets/dog_basecolor.jpg')),
+        skinning: true,
+        metalness: 1,
+        roughness: 1,
+      });
+      this.wolf.material.emissiveMap.minFilter = THREE.LinearFilter;
+      if (DEBUG) {
+        this.wolf.material = new THREE.MeshNormalMaterial({
+          skinning: true,
+        });
+        this.wolf.material.transparent = true;
+        this.wolf.material.opacity = 0.3;
+      }
+
       this.wolf.frustumCulled = false;
       this.wolf.geometry.computeVertexNormals();
-
       // set bone rotations to face child
       setZForward(this.root);
       this.wolf.bind(this.wolf.skeleton);
@@ -165,10 +185,10 @@ export default class Wolf {
       // arrow helpers to assist with bone directions
       bone.originalForward = new THREE.Vector3(0, 0, 1).transformDirection(bone.matrixWorld);
       bone.arrowHelper = new THREE.ArrowHelper(bone.originalForward,
-        bone.getWorldPosition(new THREE.Vector3()), 0.05, 0x00ff00);
+        bone.getWorldPosition(new THREE.Vector3()), 0.08, 0x00ff00);
       this.scene.add(bone.arrowHelper);
-      bone.upArrowHelper = new THREE.ArrowHelper(bone.originalUp,
-        bone.getWorldPosition(new THREE.Vector3()), 0.05, 0xff0000);
+      bone.upArrowHelper = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0).transformDirection(bone.matrixWorld),
+        bone.getWorldPosition(new THREE.Vector3()), 0.08, 0x0000ff);
       this.scene.add(bone.upArrowHelper);
     }
 
@@ -183,9 +203,9 @@ export default class Wolf {
     if (bone.children.length === 0) {
       return;
     }
-
     // rotate bone to face the average direction of its children
-    const bonePosRef = (bone.name === 'root') ? 0 : bone.posRef;
+    const bonePosRef = (bone.name === 'root') ? this.rootWorldPos : this.BONES[bone.posRef].position;
+
     // get average direction
     const averagedDir = this.tmps.v1.set(0, 0, 0);
     bone.children.forEach((child) => {
@@ -193,7 +213,7 @@ export default class Wolf {
     });
     averagedDir.multiplyScalar(1 / bone.children.length);
     // convert to local coords
-    averagedDir.sub(this.BONES[bonePosRef].position);
+    averagedDir.sub(bonePosRef);
     const localDir = averagedDir.normalize().transformDirection(
       this.tmps.m1.getInverse(bone.parent.matrixWorld),
     );
@@ -212,10 +232,11 @@ export default class Wolf {
     // update children positions w.r.t the new parent direction and new NN positions
     bone.children.forEach((child) => {
       const dir = this.tmps.v1.copy(this.BONES[child.posRef].position)
-        .sub(this.BONES[bonePosRef].position);
+        .sub(bonePosRef);
       const newPos = dir.normalize().transformDirection(this.tmps.m1.getInverse(bone.matrixWorld))
         .multiplyScalar(child.originalLength);
       child.position.copy(newPos);
+
       if (DEBUG) {
         child.updateMatrixWorld(false, false);
         child.getWorldPosition(child.arrowHelper.position);
@@ -226,11 +247,22 @@ export default class Wolf {
     });
   }
 
-  update() {
-    // update root position
-    const rootPos = this.boneGroup.worldToLocal(this.tmps.v1.copy(this.BONES[0].position));
+  update(forward) {
+    // take the root skeleton position and offset the rig root at it's original offset
+    this.rootWorldPos.copy(this.BONES[MODEL_ROOT_IDX].position);
+    addScalarMultiple(this.rootWorldPos, forward, -0.3);
+    this.rootWorldPos.y += 0.2;
+
+    // set skeleton root position
+    const rootPos = this.boneGroup.worldToLocal(this.tmps.v1.copy(this.rootWorldPos));
     this.root.position.copy(rootPos);
     this.root.updateWorldMatrix(false, false);
+
+    if (DEBUG) {
+      this.root.arrowHelper.position.copy(this.rootWorldPos);
+      this.root.upArrowHelper.position.copy(this.rootWorldPos);
+    }
+
     // update the rest of the heirarchy
     this.updatePose(this.root);
   }

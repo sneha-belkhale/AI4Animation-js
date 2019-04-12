@@ -1,9 +1,15 @@
-const THREE = require('three');
+import * as THREE from 'three';
 
 const t1 = new THREE.Vector3();
 const t2 = new THREE.Vector3();
 const t3 = new THREE.Vector3();
 const m1 = new THREE.Matrix4();
+
+export function addScalarMultiple(target, addVec, mult) {
+  target.x += (addVec.x * mult);
+  target.y += (addVec.y * mult);
+  target.z += (addVec.z * mult);
+}
 
 export function transformDirection(v, m) {
   // input: THREE.Matrix4 affine matrix

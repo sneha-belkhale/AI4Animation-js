@@ -1,28 +1,35 @@
 import Stats from 'stats-js';
+import {
+  EffectComposer, RenderPass, EffectPass, BloomEffect,
+} from 'postprocessing';
+import * as THREE from 'three';
 import NeuralNet from './MANNNeuralNet';
 import Trajectory from './Trajectory';
 import Wolf from './Wolf';
+
+
 import {
   getRelativePositionTo, getRelativeDirectionTo, getRelativePositionFrom, getRelativeDirectionFrom,
 } from './Utils';
 
-import GroundShader from './shaders/GroundShader';
-
-
-const THREE = require('three');
+const Reflector = require('./libs/Reflector')(THREE);
 const OrbitControls = require('three-orbit-controls')(THREE);
 
+const DEBUG = false;
+
+const STYLE_COUNT = 6;
 const POINT_SAMPLES = 12;
 const TRAJECTORY_DIM_IN = 13;
 const JOINT_DIM_IN = 12;
 const JOINT_DIM_OUT = 12;
 const TRAJECTORY_DIM_OUT = 6;
-const RootPointIndex = 6;
+const ROOT_POINT_INDEX = 6;
 const FRAMERATE = 60;
 const UP = new THREE.Vector3(0, 1, 0);
+const Z_AXIS = new THREE.Vector3(0, 0, 3);
 
-let scene; let camera; let renderer; let trajectory; let NN; let stats; let wolf; let
-  keyHoldTime = 0; let light; let lastTime = 0; let keyDownEvent;
+let scene; let camera; let renderer; let composer; let trajectory; let NN; let stats; let wolf; let
+  keyHoldTime = 0; let light; let lastTime = 0; let keyDownEvent; let tunnelMesh;
 
 const temps = {
   v1: new THREE.Vector3(),
@@ -38,29 +45,65 @@ export default async function initWebScene() {
   // set up camera
   camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 1000);
   camera.position.set(0, 0, 2);
+  camera.lookAt(new THREE.Vector3(0, -0.2, 3));
+
   scene.add(camera);
   // set up controls
-  // const controls = new OrbitControls(camera);
-  // restrict movement to stay within the room
+  if (DEBUG) {
+    const controls = new OrbitControls(camera);
+  }
+
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
+  /** POST PROCESSING ( BLOOM EFFECT ) * */
+  composer = new EffectComposer(renderer);
+  const renderPass = new RenderPass(scene, camera);
+
+  const bloomPass = new EffectPass(camera, new BloomEffect({
+    distinction: 0.1,
+  }));
+  bloomPass.renderToScreen = true;
+  composer.addPass(renderPass);
+  composer.addPass(bloomPass);
+
   /** BASIC SCENE SETUP * */
-  // just adding a ground
-  const groundPlane = new THREE.Mesh(new THREE.PlaneGeometry(50, 50),
-    new THREE.MeshPhysicalMaterial());
-  groundPlane.material.onBeforeCompile = function (shader) {
-    shader.vertexShader = GroundShader.vertexShader;
-    shader.fragmentShader = GroundShader.fragmentShader;
-  };
-  scene.add(groundPlane);
-  groundPlane.rotateX(-Math.PI / 2);
 
-  light = new THREE.PointLight(0xffffff, 2, 8);
-
+  // add a point light to follow the dog
+  light = new THREE.PointLight(0x6eabfb, 0.3, 8);
   light.position.y = 5;
   scene.add(light);
+
+  // add a reflective material for the ground
+  const reflectiveGround = new Reflector(new THREE.PlaneGeometry(70, 500), {
+    clipBias: 0.003,
+    textureWidth: window.innerWidth * window.devicePixelRatio,
+    textureHeight: window.innerHeight * window.devicePixelRatio,
+    recursion: 1,
+    roughnessTexurePath: require('./assets/shattered.jpg'),
+  });
+  reflectiveGround.rotateX(-Math.PI / 2);
+  if (!DEBUG) {
+    scene.add(reflectiveGround);
+  }
+
+  // add tunnel ( coiled tube )
+  const tunnelVertices = [];
+  for (let i = 0; i < 200; i += 1) {
+    const z = new THREE.Vector3(40 * Math.sin(i / 3), 40 * Math.cos(i / 3), 3 * i);
+    tunnelVertices.push(z);
+  }
+  const tunnelCurve = new THREE.CatmullRomCurve3(tunnelVertices, false, 'chordal');
+  const tunnelGeo = new THREE.TubeGeometry(tunnelCurve, 1000, 0.5, 5, false);
+  tunnelMesh = new THREE.Mesh(tunnelGeo, new THREE.MeshPhysicalMaterial({
+    emissive: 0x6eabfb,
+    emissiveIntensity: 2,
+  }));
+  tunnelMesh.position.y = 1;
+  if (!DEBUG) {
+    scene.add(tunnelMesh);
+  }
 
   /** AI ANIMATION SETUP * */
   // create wolf
@@ -90,18 +133,35 @@ function resetTrajectory() {
   keyHoldTime = 0;
   lastTime = 0;
   keyDownEvent = null;
-  for (let i = RootPointIndex; i < POINT_SAMPLES; i += 1) {
+  resetTrajectoryStyles();
+}
+
+function resetTrajectoryStyles() {
+  for (let i = ROOT_POINT_INDEX; i < POINT_SAMPLES; i += 1) {
     // TODO: make this less abrupt
-    trajectory.points[i].styles[1] = 0;
     trajectory.points[i].styles[0] = 1;
-    trajectory.points[i].styles[4] = 0;
+    for (let j = 1; j < STYLE_COUNT; j += 1) {
+      trajectory.points[i].styles[j] = 0;
+    }
     trajectory.points[i].velocity.set(0, 0, 0);
     trajectory.points[i].speed = 0;
   }
 }
 
+function rotateIdleStyles() {
+  resetTrajectoryStyles();
+  const pose = Math.ceil((Date.now() % 10000) / 5000);
+  const quat = new THREE.Quaternion().setFromAxisAngle(UP, 5 * Math.sin(Date.now() / 1000) / FRAMERATE);
+  for (let i = ROOT_POINT_INDEX + 1; i < POINT_SAMPLES; i += 1) {
+    trajectory.points[i].styles[pose * 5] = 1;
+    const prevQuat = trajectory.points[i - 1].quaternion;
+    trajectory.points[i].quaternion.copy(prevQuat).premultiply(quat);
+  }
+}
+
 function predictTrajectory() {
   if (lastTime === 0) {
+    resetTrajectoryStyles();
     lastTime = Date.now();
     return;
   }
@@ -111,7 +171,7 @@ function predictTrajectory() {
 
   keyHoldTime += 0.01 * diff;
 
-  const rootQuat = trajectory.points[RootPointIndex].quaternion;
+  const rootQuat = trajectory.points[ROOT_POINT_INDEX].quaternion;
 
   let quat;
   if (keyDownEvent.key === 'w') {
@@ -124,12 +184,13 @@ function predictTrajectory() {
     return;
   }
 
-  for (let i = RootPointIndex; i < POINT_SAMPLES; i += 1) {
+  for (let i = ROOT_POINT_INDEX; i < POINT_SAMPLES; i += 1) {
     const prevPos = trajectory.points[i - 1].position;
     const prevQuat = trajectory.points[i - 1].quaternion;
     trajectory.points[i].styles[1] = Math.min(trajectory.points[i].styles[1] + 0.1 * diff * i, 1);
     trajectory.points[i].styles[0] = Math.max(trajectory.points[i].styles[0] - 0.1 * diff * i, 0);
     trajectory.points[i].styles[4] = 0;
+
     if (!quat) {
       trajectory.points[i].quaternion.copy(rootQuat);
     } else {
@@ -147,28 +208,33 @@ function predictTrajectory() {
 }
 
 function update() {
+  stats.begin();
+
   if (keyDownEvent) {
     predictTrajectory();
+  } else {
+    rotateIdleStyles();
   }
-  const campos = trajectory.getPosition(RootPointIndex);
-  const camLeft = trajectory.getLeft(RootPointIndex);
-  // const camForward = trajectory.getDirection(RootPointIndex);
 
-  camera.position.copy(campos).sub(camLeft.multiplyScalar(5));
-  camera.position.y = 2.6;
-  camera.lookAt(campos);
-  light.position.x = campos.x;
-  light.position.z = campos.z;
+  /** camera / lights / scene update * */
+  if (!DEBUG) {
+    const campos = trajectory.getPosition(ROOT_POINT_INDEX);
+    camera.position.copy(campos).sub(Z_AXIS);
+    camera.position.y = 0.9;
+    light.position.x = campos.x;
+    light.position.z = campos.z;
+    tunnelMesh.rotateZ(0.1);
+  }
 
   requestAnimationFrame(update);
-  renderer.render(scene, camera);
+  composer.render();
 
   if (!wolf.ready) {
     return;
   }
 
-
-  const currentRoot = trajectory.getMatrixFor(RootPointIndex);
+  /** AI update * */
+  const currentRoot = trajectory.getMatrixFor(ROOT_POINT_INDEX);
   currentRoot.elements[1 * 4 + 3] = 0;
   let start = 0;
   for (let i = 0; i < POINT_SAMPLES; i += 1) {
@@ -184,7 +250,7 @@ function update() {
     NN.setInput(start + i * TRAJECTORY_DIM_IN + 5, vel.z);
     NN.setInput(start + i * TRAJECTORY_DIM_IN + 6, speed);
 
-    for (let j = 0; j < 6; j += 1) {
+    for (let j = 0; j < STYLE_COUNT; j += 1) {
       NN.setInput(start + i * TRAJECTORY_DIM_IN + (TRAJECTORY_DIM_IN - 6) + j,
         trajectory.points[i].styles[j]);
     }
@@ -192,7 +258,7 @@ function update() {
   start += TRAJECTORY_DIM_IN * POINT_SAMPLES;
 
 
-  const previousRoot = trajectory.getMatrixFor(RootPointIndex - 1);
+  const previousRoot = trajectory.getMatrixFor(ROOT_POINT_INDEX - 1);
   previousRoot.elements[1 * 4 + 3] = 0;
   // //Input Previous Bone Positions / Velocities
   for (let i = 0; i < wolf.BONES.length; i += 1) {
@@ -221,12 +287,10 @@ function update() {
   }
   start += JOINT_DIM_IN * wolf.BONES.length;
 
-  stats.begin();
   NN.predict();
-  stats.end();
 
   // Update Past Trajectory
-  for (let i = 0; i < RootPointIndex; i += 1) {
+  for (let i = 0; i < ROOT_POINT_INDEX; i += 1) {
     trajectory.points[i].position.copy(trajectory.points[i + 1].position);
     trajectory.points[i].quaternion.copy(trajectory.points[i + 1].quaternion);
     trajectory.points[i].velocity.copy(trajectory.points[i + 1].velocity);
@@ -237,10 +301,10 @@ function update() {
   }
 
   const updates = Math.min(
-    (1 - (trajectory.points[RootPointIndex].styles[0])) ** 0.25,
-    (1 - (trajectory.points[RootPointIndex].styles[3]
-    + trajectory.points[RootPointIndex].styles[4]
-    + trajectory.points[RootPointIndex].styles[5]
+    (1 - (trajectory.points[ROOT_POINT_INDEX].styles[0])) ** 0.25,
+    (1 - (trajectory.points[ROOT_POINT_INDEX].styles[3]
+    + trajectory.points[ROOT_POINT_INDEX].styles[4]
+    + trajectory.points[ROOT_POINT_INDEX].styles[5]
     )) ** 0.5,
   );
 
@@ -254,20 +318,20 @@ function update() {
   const angle = rootMotion.y * 0.0174533;
 
   const nextRootPos = getRelativePositionFrom(translation.clone(), currentRoot);
-  trajectory.points[RootPointIndex].position.copy(nextRootPos);
-  trajectory.setDirectionFor(RootPointIndex, temps.quat1.setFromAxisAngle(UP, angle)
-    .premultiply(trajectory.points[RootPointIndex].quaternion));
+  trajectory.points[ROOT_POINT_INDEX].position.copy(nextRootPos);
+  trajectory.setDirectionFor(ROOT_POINT_INDEX, temps.quat1.setFromAxisAngle(UP, angle)
+    .premultiply(trajectory.points[ROOT_POINT_INDEX].quaternion));
 
   const nextRootVel = getRelativeDirectionFrom(translation.clone(), currentRoot)
     .multiplyScalar(FRAMERATE);
-  trajectory.points[RootPointIndex].velocity.copy(nextRootVel);
+  trajectory.points[ROOT_POINT_INDEX].velocity.copy(nextRootVel);
 
-  const nextRoot = trajectory.getMatrixFor(RootPointIndex);
+  const nextRoot = trajectory.getMatrixFor(ROOT_POINT_INDEX);
   nextRoot.elements[1 * 4 + 3] = 0;
   // Update Future Trajectory
   const tPos = getRelativeDirectionFrom(translation.clone(), nextRoot);
   const tVel = getRelativeDirectionFrom(translation.clone(), nextRoot).multiplyScalar(FRAMERATE);
-  for (let i = RootPointIndex + 1; i < trajectory.points.length; i += 1) {
+  for (let i = ROOT_POINT_INDEX + 1; i < trajectory.points.length; i += 1) {
     trajectory.points[i].position.add(tPos);
     trajectory.setDirectionFor(i, temps.quat1.setFromAxisAngle(UP, angle)
       .premultiply(trajectory.points[i].quaternion));
@@ -304,5 +368,6 @@ function update() {
     wolf.VELOCITIES[i].copy(vel);
   }
   start += JOINT_DIM_OUT * wolf.BONES.length;
-  wolf.update();
+  wolf.update(trajectory.getDirection(ROOT_POINT_INDEX));
+  stats.end();
 }

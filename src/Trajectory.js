@@ -1,4 +1,4 @@
-const THREE = require('three');
+import * as THREE from 'three';
 
 export default class Trajectory {
   // set of 10 points;
@@ -7,18 +7,18 @@ export default class Trajectory {
     this.points = [];
     const pathPointGeo = new THREE.BoxGeometry(0.06, 0.02, 0.01);
     for (let i = 0; i < this.numPoints; i += 1) {
-      const pathPointMat = new THREE.MeshPhongMaterial({
+      const pathPointMat = new THREE.MeshBasicMaterial({
         color: new THREE.Color(0.2, i / this.numPoints, i / this.numPoints, 0.5),
         opacity: 0.5,
         transparent: true,
         blending: THREE.AdditiveBlending,
       });
       const obj = new THREE.Mesh(pathPointGeo, pathPointMat);
-      obj.visible = false;
       obj.position.set(0, 0, 0);
       obj.velocity = new THREE.Vector3(0, 0, 0);
       obj.styles = [1, 0, 0, 0, 0, 0];
       obj.speed = 0.5;
+      obj.visible = false;
       this.points.push(obj);
       scene.add(obj);
     }
@@ -50,18 +50,6 @@ export default class Trajectory {
     forward.set(0, 0, 1);
     forward.applyQuaternion(this.points[i].quaternion);
     return forward;
-  }
-
-  getLeft(i, tmp) {
-    let left;
-    if (tmp) {
-      left = tmp;
-    } else {
-      left = new THREE.Vector3();
-    }
-    left.set(1, 0, 0);
-    left.applyQuaternion(this.points[i].quaternion);
-    return left;
   }
 
   getVelocity(i, tmp) {

@@ -6,7 +6,7 @@
  * face the child bone.
  *
  * */
-const THREE = require('three');
+import * as THREE from 'three';
 
 const t = new THREE.Vector3();
 const q = new THREE.Quaternion();

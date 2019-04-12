@@ -1222,7 +1222,7 @@ var FBXLoader = ( function () {
 				} );
 
 			}
-      console.log(geometry)
+
 			if ( geometry.FBX_Deformer ) {
 
 				materials.forEach( function ( material ) {
