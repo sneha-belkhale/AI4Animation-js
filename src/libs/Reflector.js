@@ -170,8 +170,10 @@ module.exports = function ( THREE ) {
       renderer.vr.enabled = false; // Avoid camera modification and recursion
       renderer.shadowMap.autoUpdate = false; // Avoid re-computing shadows
 
-      renderer.render( scene, virtualCamera, renderTarget, true );
+      renderer.setRenderTarget( renderTarget );
 
+      renderer.clear()
+      renderer.render( scene, virtualCamera );
       renderer.vr.enabled = currentVrEnabled;
       renderer.shadowMap.autoUpdate = currentShadowAutoUpdate;
 
