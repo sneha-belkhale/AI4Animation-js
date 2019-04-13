@@ -23,25 +23,48 @@ export default class NeuralNet {
   }
 
   async loadParameters() {
-    this.Xmean = await Parameters.Load('/Xmean.bin', this.XDim, 1);
-    this.Xstd = await Parameters.Load('/Xstd.bin', this.XDim, 1, 'Xstd');
-    this.Ymean = await Parameters.Load('/Ymean.bin', this.YDim, 1, 'Ymean');
-    this.Ystd = await Parameters.Load('/Ystd.bin', this.YDim, 1, 'Ystd');
-    this.BW0 = await Parameters.Load('/wc0_w.bin', this.HDimBlend, this.XDimBlend, 'wc0_w');
-    this.Bb0 = await Parameters.Load('/wc0_b.bin', this.HDimBlend, 1, 'wc0_b');
-    this.BW1 = await Parameters.Load('/wc1_w.bin', this.HDimBlend, this.HDimBlend, 'wc1_w');
-    this.Bb1 = await Parameters.Load('/wc1_b.bin', this.HDimBlend, 1, 'wc1_b');
-    this.BW2 = await Parameters.Load('/wc2_w.bin', this.YDimBlend, this.HDimBlend, 'wc2_w');
-    this.Bb2 = await Parameters.Load('/wc2_b.bin', this.YDimBlend, 1, 'wc2_b');
+    const promises = [
+      Parameters.Load('/Xmean.bin', this.XDim, 1),
+      Parameters.Load('/Xstd.bin', this.XDim, 1, 'Xstd'),
+      Parameters.Load('/Ymean.bin', this.YDim, 1, 'Ymean'),
+      Parameters.Load('/Ystd.bin', this.YDim, 1, 'Ystd'),
+      Parameters.Load('/wc0_w.bin', this.HDimBlend, this.XDimBlend, 'wc0_w'),
+      Parameters.Load('/wc0_b.bin', this.HDimBlend, 1, 'wc0_b'),
+      Parameters.Load('/wc1_w.bin', this.HDimBlend, this.HDimBlend, 'wc1_w'),
+      Parameters.Load('/wc1_b.bin', this.HDimBlend, 1, 'wc1_b'),
+      Parameters.Load('/wc2_w.bin', this.YDimBlend, this.HDimBlend, 'wc2_w'),
+      Parameters.Load('/wc2_b.bin', this.YDimBlend, 1, 'wc2_b'),
+    ];
 
+    await Promise.all(promises).then((values) => {
+      const [Xmean, Xstd, Ymean, Ystd, BW0, Bb0, BW1, Bb1, BW2, Bb2] = values;
+      this.Xmean = Xmean;
+      this.Xstd = Xstd;
+      this.Ymean = Ymean;
+      this.Ystd = Ystd;
+      this.BW0 = BW0;
+      this.Bb0 = Bb0;
+      this.BW1 = BW1;
+      this.Bb1 = Bb1;
+      this.BW2 = BW2;
+      this.Bb2 = Bb2;
+    });
+
+    const expertWeightPromises = [];
     for (let i = 0; i < this.YDimBlend; i += 1) {
-      this.CW.push(await Parameters.Load(`/cp0_a${i.toString()}.bin`, this.HDim, this.XDim));
-      this.CW.push(await Parameters.Load(`/cp0_b${i.toString()}.bin`, this.HDim, 1));
-      this.CW.push(await Parameters.Load(`/cp1_a${i.toString()}.bin`, this.HDim, this.HDim));
-      this.CW.push(await Parameters.Load(`/cp1_b${i.toString()}.bin`, this.HDim, 1));
-      this.CW.push(await Parameters.Load(`/cp2_a${i.toString()}.bin`, this.YDim, this.HDim));
-      this.CW.push(await Parameters.Load(`/cp2_b${i.toString()}.bin`, this.YDim, 1));
+      expertWeightPromises.push(Parameters.Load(`/cp0_a${i.toString()}.bin`, this.HDim, this.XDim));
+      expertWeightPromises.push(Parameters.Load(`/cp0_b${i.toString()}.bin`, this.HDim, 1));
+      expertWeightPromises.push(Parameters.Load(`/cp1_a${i.toString()}.bin`, this.HDim, this.HDim));
+      expertWeightPromises.push(Parameters.Load(`/cp1_b${i.toString()}.bin`, this.HDim, 1));
+      expertWeightPromises.push(Parameters.Load(`/cp2_a${i.toString()}.bin`, this.YDim, this.HDim));
+      expertWeightPromises.push(Parameters.Load(`/cp2_b${i.toString()}.bin`, this.YDim, 1));
     }
+
+    await Promise.all(expertWeightPromises).then((weights) => {
+      weights.forEach((weight) => {
+        this.CW.push(weight);
+      });
+    });
 
     this.X = Parameters.initMatrix(this.XDim, 1, 'X');
     this.Y = Parameters.initMatrix(this.YDim, 1, 'Y');

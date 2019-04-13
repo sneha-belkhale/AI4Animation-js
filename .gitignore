@@ -21,4 +21,4 @@ yarn-error.log*
 
 .vscode/
 
-public/scene/
+/src/NN_Wolf_MANN

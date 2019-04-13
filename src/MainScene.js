@@ -12,8 +12,8 @@ import {
   getRelativePositionTo, getRelativeDirectionTo, getRelativePositionFrom, getRelativeDirectionFrom,
 } from './Utils';
 
-const Reflector = require('./libs/Reflector')(THREE);
 const OrbitControls = require('three-orbit-controls')(THREE);
+const Reflector = require('./libs/Reflector')(THREE);
 
 const DEBUG = false;
 
@@ -50,6 +50,7 @@ export default async function initWebScene() {
   scene.add(camera);
   // set up controls
   if (DEBUG) {
+    // eslint-disable-next-line
     const controls = new OrbitControls(camera);
   }
 
@@ -71,7 +72,7 @@ export default async function initWebScene() {
   /** BASIC SCENE SETUP * */
 
   // add a point light to follow the dog
-  light = new THREE.PointLight(0x6eabfb, 0.3, 8);
+  light = new THREE.PointLight(0x6eabfb, 0.5, 8);
   light.position.y = 5;
   scene.add(light);
 
@@ -150,12 +151,19 @@ function resetTrajectoryStyles() {
 
 function rotateIdleStyles() {
   resetTrajectoryStyles();
-  const pose = Math.ceil((Date.now() % 10000) / 5000);
-  const quat = new THREE.Quaternion().setFromAxisAngle(UP, 5 * Math.sin(Date.now() / 1000) / FRAMERATE);
+  const pose = Math.ceil((Date.now() % 5000) / 2500);
+  const quat = new THREE.Quaternion().setFromAxisAngle(
+    UP, 8 * Math.sin(Date.now() / 1000) / FRAMERATE,
+  );
   for (let i = ROOT_POINT_INDEX + 1; i < POINT_SAMPLES; i += 1) {
     trajectory.points[i].styles[pose * 5] = 1;
     const prevQuat = trajectory.points[i - 1].quaternion;
+    const prevPos = trajectory.points[i - 1].position;
     trajectory.points[i].quaternion.copy(prevQuat).premultiply(quat);
+    const forward = trajectory.getDirection(i, temps.v1);
+    trajectory.points[i].position.copy(prevPos).add(
+      forward.multiplyScalar(0.05 * (1 + Math.sin(Date.now() / 543))),
+    );
   }
 }
 
@@ -196,7 +204,7 @@ function predictTrajectory() {
     } else {
       trajectory.points[i].quaternion.copy(prevQuat).premultiply(quat);
     }
-    const forward = trajectory.getDirection(i);
+    const forward = trajectory.getDirection(i, temps.v1);
     let inc = 0.04 + keyHoldTime;
     if (inc > 0.099) {
       inc = 0.12;

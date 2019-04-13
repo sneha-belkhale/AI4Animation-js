@@ -104,7 +104,8 @@ export default class Wolf {
     this.UPS = UPS;
     this.scene = scene;
     this.bones = [];
-    // this root pos is to handle the skeleton root from the houdini model, which is not part of the NN bones array
+    // this root pos is to handle the skeleton root from the houdini model,
+    // which is not part of the NN bones array
     this.rootWorldPos = new THREE.Vector3();
 
     this.tmps = {
@@ -132,11 +133,14 @@ export default class Wolf {
     // add the real wolf
     const fbxLoader = new FBXLoader();
     fbxLoader.load(require('./assets/dog_light_v012.fbx'), (obj) => {
+      // eslint-disable-next-line
       this.wolf = obj.children[0];
+      // eslint-disable-next-line
       this.boneGroup = obj.children[1];
       this.boneGroup.updateMatrixWorld(true);
       scene.add(this.wolf);
       scene.add(this.boneGroup);
+      // eslint-disable-next-line
       this.root = this.boneGroup.children[0];
       this.root.updateMatrixWorld(true);
 
@@ -147,7 +151,7 @@ export default class Wolf {
         emissiveMap: new THREE.TextureLoader().load(require('./assets/dog_basecolor.jpg')),
         skinning: true,
         metalness: 1,
-        roughness: 1,
+        roughness: 0.3,
       });
       this.wolf.material.emissiveMap.minFilter = THREE.LinearFilter;
       if (DEBUG) {
@@ -187,8 +191,10 @@ export default class Wolf {
       bone.arrowHelper = new THREE.ArrowHelper(bone.originalForward,
         bone.getWorldPosition(new THREE.Vector3()), 0.08, 0x00ff00);
       this.scene.add(bone.arrowHelper);
-      bone.upArrowHelper = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0).transformDirection(bone.matrixWorld),
-        bone.getWorldPosition(new THREE.Vector3()), 0.08, 0x0000ff);
+      bone.upArrowHelper = new THREE.ArrowHelper(
+        new THREE.Vector3(0, 1, 0).transformDirection(bone.matrixWorld),
+        bone.getWorldPosition(new THREE.Vector3()), 0.08, 0x0000ff,
+      );
       this.scene.add(bone.upArrowHelper);
     }
 

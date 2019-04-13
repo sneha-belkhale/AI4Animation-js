@@ -3,6 +3,7 @@ import * as nj from 'numjs';
 export default class Parameters {
   static async Load(name, rows, cols) {
     const mat = nj.zeros([rows, cols]);
+    // eslint-disable-next-line
     const response = await fetch(require(`./NN_Wolf_MANN${name}`));
     const buffer = await response.arrayBuffer();
     const data = new DataView(buffer);

@@ -5,6 +5,7 @@
   "homepage": "./",
   "dependencies": {
     "cwise": "^1.0.10",
+    "numjs": "^0.16.0",
     "postprocessing": "^6.1.1",
     "stats-js": "^1.0.0",
     "three": "^0.103.0",
@@ -17,7 +18,7 @@
     "eject": "react-scripts eject",
     "lint": "node_modules/.bin/eslint .",
     "lint:fix": "node_modules/.bin/eslint . --fix",
-    "pull": "(cd src && curl -O http://www.starke-consult.de/UoE/GitHub/SIGGRAPH_2018/NN_Wolf_MANN.zip && unzip NN_Wolf_MANN)"
+    "pull": "(mkdir src/NN_Wolf_MANN && cd src/NN_Wolf_MANN && curl -O http://www.starke-consult.de/UoE/GitHub/SIGGRAPH_2018/NN_Wolf_MANN.zip && unzip NN_Wolf_MANN)"
   },
   "devDependencies": {
     "eslint-config-airbnb": "^17.1.0",
@@ -33,7 +34,6 @@
   "husky": {
     "hooks": {
       "pre-commit": "yarn lint",
-      "pre-push": "yarn push",
       "post-merge": "yarn pull"
     }
   }
