@@ -9,6 +9,8 @@ I followed the <a href ="https://github.com/sebastianstarke/AI4Animation/tree/ma
 
 If you want to use a different skeleton, you will need to get motion capture data for this skeleton and train a new model, the instructions and tensorflow code for this are in the AI4Animation project <a href ="https://github.com/sebastianstarke/AI4Animation/tree/master/TensorFlow/SIGGRAPH_2018">here</a>. 
 
+<img src ="https://user-images.githubusercontent.com/17795014/56417371-44dea780-62c6-11e9-8bcb-c01f109f7bdb.png" width="75%">
+
 ## Todo Items:
 
 - An example with a human skeleton. 
