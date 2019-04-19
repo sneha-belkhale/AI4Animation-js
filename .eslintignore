@@ -7,3 +7,6 @@ src/three-ik/
 src/libs/
 src/shaders/
 src/misc/
+/scripts
+/config
+/build
