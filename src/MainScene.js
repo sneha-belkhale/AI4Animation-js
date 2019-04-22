@@ -29,7 +29,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 const Z_AXIS = new THREE.Vector3(0, 0, 3);
 
 let scene; let camera; let renderer; let composer; let trajectory; let NN; let stats; let wolf; let
-  keyHoldTime = 0; let light; let lastTime = 0; let keyDownEvent; let tunnelMesh;
+  keyHoldTime = 0; let light; let bottomLight; let lastTime = 0; let keyDownEvent; let tunnelMesh;
 
 const temps = {
   v1: new THREE.Vector3(),
@@ -72,9 +72,12 @@ export default async function initWebScene() {
   /** BASIC SCENE SETUP * */
 
   // add a point light to follow the dog
-  light = new THREE.PointLight(0x6eabfb, 0.5, 8);
+  light = new THREE.PointLight(0x6eabfb, 0.7, 8);
   light.position.y = 5;
   scene.add(light);
+  bottomLight = new THREE.PointLight(0xff0000, 0.7, 8);
+  bottomLight.position.y = -5;
+  scene.add(bottomLight);
 
   // add a reflective material for the ground
   const reflectiveGround = new Reflector(new THREE.PlaneGeometry(70, 500), {
@@ -231,6 +234,8 @@ function update() {
     camera.position.y = 0.9;
     light.position.x = campos.x;
     light.position.z = campos.z;
+    bottomLight.position.x = campos.x;
+    bottomLight.position.z = campos.z;
     tunnelMesh.rotateZ(0.1);
   }
 

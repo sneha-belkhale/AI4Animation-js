@@ -263,7 +263,7 @@ module.exports = function ( THREE ) {
           float scaleX = 20.0;
           float scaleY = 50.0;
           float rThresh = 0.2;
-          float lift = 0.03;
+          float lift = 0.04;
 
           vec4 base = texture2DProj( tDiffuse, vUv );
           vec4 rough = texture2D( tRoughness, vec2(scaleX*vUv2.x, scaleY*vUv2.y) );

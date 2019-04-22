@@ -150,8 +150,8 @@ export default class Wolf {
         emissiveIntensity: 10,
         emissiveMap: new THREE.TextureLoader().load(require('./assets/dog_basecolor.jpg')),
         skinning: true,
-        metalness: 1,
-        roughness: 0.3,
+        metalness: 0.5,
+        roughness: 0.5,
       });
       this.wolf.material.emissiveMap.minFilter = THREE.LinearFilter;
       if (DEBUG) {
