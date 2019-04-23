@@ -29,3 +29,12 @@ yarn pull // this pulls the model weights hosted on the web
 yarn start
 ```
 Then open http://127.0.0.1:3000 in a web browser.
+
+## License
+
+MIT License, Copyright © 2019 Sneha Belkhale
+
+However, if you are using the original dataset for commercial purposes, you should read the copyright information from the original <a href ="https://github.com/sebastianstarke/AI4Animation">AI4Animation</a> project. 
+
+
+
