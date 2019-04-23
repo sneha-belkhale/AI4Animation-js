@@ -3,8 +3,6 @@ import FBXLoader from './libs/FBXLoader';
 import { setQuaternionFromDirection, addScalarMultiple } from './Utils';
 import { setZForward } from './AxisUtils';
 
-
-const DEBUG = false;
 const MODEL_ROOT_IDX = 24;
 
 const WOLFBONES = [
@@ -123,11 +121,8 @@ export default class Wolf {
       const bone = new THREE.Mesh(boneGeo, boneMat);
       bone.position.set(bonePos[0], bonePos[1] - 1, bonePos[2]);
       this.BONES.push(bone);
+      bone.visible = false;
       scene.add(bone);
-
-      if (!DEBUG) {
-        bone.visible = false;
-      }
     });
 
     // add the real wolf
@@ -145,7 +140,7 @@ export default class Wolf {
       this.root.updateMatrixWorld(true);
 
       // adjustments
-      this.wolf.material = new THREE.MeshPhysicalMaterial({
+      this.physicalMaterial = new THREE.MeshPhysicalMaterial({
         emissive: new THREE.Color(0xffffff),
         emissiveIntensity: 10,
         emissiveMap: new THREE.TextureLoader().load(require('./assets/dog_basecolor.jpg')),
@@ -153,14 +148,13 @@ export default class Wolf {
         metalness: 0.5,
         roughness: 0.5,
       });
+      this.wolf.material = this.physicalMaterial;
       this.wolf.material.emissiveMap.minFilter = THREE.LinearFilter;
-      if (DEBUG) {
-        this.wolf.material = new THREE.MeshNormalMaterial({
-          skinning: true,
-        });
-        this.wolf.material.transparent = true;
-        this.wolf.material.opacity = 0.3;
-      }
+      this.debugMaterial = new THREE.MeshNormalMaterial({
+        skinning: true,
+        transparent: true,
+        opacity: 0.5,
+      });
 
       this.wolf.frustumCulled = false;
       this.wolf.geometry.computeVertexNormals();
@@ -185,18 +179,18 @@ export default class Wolf {
       // save original length for retargeting
       bone.originalLength = bone.position.length();
     }
-    if (DEBUG) {
-      // arrow helpers to assist with bone directions
-      bone.originalForward = new THREE.Vector3(0, 0, 1).transformDirection(bone.matrixWorld);
-      bone.arrowHelper = new THREE.ArrowHelper(bone.originalForward,
-        bone.getWorldPosition(new THREE.Vector3()), 0.08, 0x00ff00);
-      this.scene.add(bone.arrowHelper);
-      bone.upArrowHelper = new THREE.ArrowHelper(
-        new THREE.Vector3(0, 1, 0).transformDirection(bone.matrixWorld),
-        bone.getWorldPosition(new THREE.Vector3()), 0.08, 0x0000ff,
-      );
-      this.scene.add(bone.upArrowHelper);
-    }
+    // arrow helpers to assist with bone directions
+    bone.originalForward = new THREE.Vector3(0, 0, 1).transformDirection(bone.matrixWorld);
+    bone.arrowHelper = new THREE.ArrowHelper(bone.originalForward,
+      bone.getWorldPosition(new THREE.Vector3()), 0.08, 0xff0000);
+    bone.arrowHelper.visible = false;
+    this.scene.add(bone.arrowHelper);
+    bone.upArrowHelper = new THREE.ArrowHelper(
+      new THREE.Vector3(0, 1, 0).transformDirection(bone.matrixWorld),
+      bone.getWorldPosition(new THREE.Vector3()), 0.08, 0x0000ff,
+    );
+    bone.upArrowHelper.visible = false;
+    this.scene.add(bone.upArrowHelper);
 
     // repeat down the heirarchy
     bone.children.forEach((child) => {
@@ -227,7 +221,7 @@ export default class Wolf {
     setQuaternionFromDirection(localDir, bone.originalUp, bone.quaternion);
     bone.updateWorldMatrix(false, false);
 
-    if (DEBUG) {
+    if (this.debug) {
       // update arrow helpers
       const newForward = this.tmps.v1.set(0, 0, 1).transformDirection(bone.matrixWorld);
       const newUp = this.tmps.v2.set(0, 1, 0).transformDirection(bone.matrixWorld);
@@ -243,7 +237,7 @@ export default class Wolf {
         .multiplyScalar(child.originalLength);
       child.position.copy(newPos);
 
-      if (DEBUG) {
+      if (this.debug) {
         child.updateMatrixWorld(false, false);
         child.getWorldPosition(child.arrowHelper.position);
         child.getWorldPosition(child.upArrowHelper.position);
@@ -264,12 +258,32 @@ export default class Wolf {
     this.root.position.copy(rootPos);
     this.root.updateWorldMatrix(false, false);
 
-    if (DEBUG) {
+    if (this.debug) {
       this.root.arrowHelper.position.copy(this.rootWorldPos);
       this.root.upArrowHelper.position.copy(this.rootWorldPos);
     }
 
     // update the rest of the heirarchy
     this.updatePose(this.root);
+  }
+
+  setBoneVisibility(bone, visibility) {
+    bone.arrowHelper.visible = visibility;
+    bone.upArrowHelper.visible = visibility;
+    bone.children.forEach((childBone) => {
+      this.setBoneVisibility(childBone, visibility);
+    });
+  }
+
+  setDebugMode() {
+    this.debug = true;
+    this.wolf.material = this.debugMaterial;
+    this.setBoneVisibility(this.root, true);
+  }
+
+  setDemoMode() {
+    this.debug = false;
+    this.wolf.material = this.physicalMaterial;
+    this.setBoneVisibility(this.root, false);
   }
 }

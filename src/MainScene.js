@@ -1,4 +1,5 @@
 import Stats from 'stats-js';
+import * as dat from 'dat.gui';
 import {
   EffectComposer, RenderPass, EffectPass, BloomEffect,
 } from 'postprocessing';
@@ -7,7 +8,6 @@ import NeuralNet from './MANNNeuralNet';
 import Trajectory from './Trajectory';
 import Wolf from './Wolf';
 
-
 import {
   getRelativePositionTo, getRelativeDirectionTo, getRelativePositionFrom, getRelativeDirectionFrom,
 } from './Utils';
@@ -15,7 +15,7 @@ import {
 const OrbitControls = require('three-orbit-controls')(THREE);
 const Reflector = require('./libs/Reflector')(THREE);
 
-const DEBUG = false;
+const CONTROL_DEBUG = false;
 
 const STYLE_COUNT = 6;
 const POINT_SAMPLES = 12;
@@ -30,6 +30,7 @@ const Z_AXIS = new THREE.Vector3(0, 0, 3);
 
 let scene; let camera; let renderer; let composer; let trajectory; let NN; let stats; let wolf; let
   keyHoldTime = 0; let light; let bottomLight; let lastTime = 0; let keyDownEvent; let tunnelMesh;
+let debugGround; let reflectiveGround; let debugMode;
 
 const temps = {
   v1: new THREE.Vector3(),
@@ -49,7 +50,7 @@ export default async function initWebScene() {
 
   scene.add(camera);
   // set up controls
-  if (DEBUG) {
+  if (CONTROL_DEBUG) {
     // eslint-disable-next-line
     const controls = new OrbitControls(camera);
   }
@@ -80,7 +81,7 @@ export default async function initWebScene() {
   scene.add(bottomLight);
 
   // add a reflective material for the ground
-  const reflectiveGround = new Reflector(new THREE.PlaneGeometry(70, 500), {
+  reflectiveGround = new Reflector(new THREE.PlaneGeometry(70, 500), {
     clipBias: 0.003,
     textureWidth: window.innerWidth * window.devicePixelRatio,
     textureHeight: window.innerHeight * window.devicePixelRatio,
@@ -88,9 +89,19 @@ export default async function initWebScene() {
     roughnessTexurePath: require('./assets/shattered.jpg'),
   });
   reflectiveGround.rotateX(-Math.PI / 2);
-  if (!DEBUG) {
-    scene.add(reflectiveGround);
-  }
+  scene.add(reflectiveGround);
+
+  // debug ground
+  const debugTex = new THREE.TextureLoader().load(require('./assets/UV_Grid_Sm.png'), (tex) => {
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(50, 50);
+  });
+
+  debugGround = new THREE.Mesh(new THREE.PlaneGeometry(500, 500), new THREE.MeshBasicMaterial({
+    map: debugTex,
+  }));
+  debugGround.rotateX(-Math.PI / 2);
 
   // add tunnel ( coiled tube )
   const tunnelVertices = [];
@@ -105,9 +116,7 @@ export default async function initWebScene() {
     emissiveIntensity: 2,
   }));
   tunnelMesh.position.y = 1;
-  if (!DEBUG) {
-    scene.add(tunnelMesh);
-  }
+  scene.add(tunnelMesh);
 
   /** AI ANIMATION SETUP * */
   // create wolf
@@ -131,6 +140,21 @@ export default async function initWebScene() {
   });
   window.addEventListener('keyup', resetTrajectory);
   update();
+
+  // gui for toggling debug mode
+  const gui = new dat.GUI();
+  const params = {
+    'debug view': false,
+  };
+  const debugGui = gui.add(params, 'debug view');
+
+  debugGui.onChange((value) => {
+    if (value) {
+      setDebugMode();
+    } else {
+      setDemoMode();
+    }
+  });
 }
 
 function resetTrajectory() {
@@ -228,7 +252,7 @@ function update() {
   }
 
   /** camera / lights / scene update * */
-  if (!DEBUG) {
+  if (!CONTROL_DEBUG) {
     const campos = trajectory.getPosition(ROOT_POINT_INDEX);
     camera.position.copy(campos).sub(Z_AXIS);
     camera.position.y = 0.9;
@@ -238,9 +262,13 @@ function update() {
     bottomLight.position.z = campos.z;
     tunnelMesh.rotateZ(0.1);
   }
+  if (debugMode) {
+    renderer.render(scene, camera);
+  } else {
+    composer.render();
+  }
 
   requestAnimationFrame(update);
-  composer.render();
 
   if (!wolf.ready) {
     return;
@@ -383,4 +411,20 @@ function update() {
   start += JOINT_DIM_OUT * wolf.BONES.length;
   wolf.update(trajectory.getDirection(ROOT_POINT_INDEX));
   stats.end();
+}
+
+function setDebugMode() {
+  scene.remove(tunnelMesh);
+  scene.remove(reflectiveGround);
+  scene.add(debugGround);
+  wolf.setDebugMode();
+  debugMode = true;
+}
+
+function setDemoMode() {
+  scene.remove(debugGround);
+  scene.add(tunnelMesh);
+  scene.add(reflectiveGround);
+  wolf.setDemoMode();
+  debugMode = false;
 }
