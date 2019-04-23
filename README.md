@@ -9,7 +9,7 @@ I followed the <a href ="https://github.com/sebastianstarke/AI4Animation/tree/ma
 
 If you want to use a different skeleton, you will need to get motion capture data for this skeleton and train a new model, the instructions and tensorflow code for this are in the AI4Animation project <a href ="https://github.com/sebastianstarke/AI4Animation/tree/master/TensorFlow/SIGGRAPH_2018">here</a>. 
 
-<img src ="https://user-images.githubusercontent.com/17795014/56417371-44dea780-62c6-11e9-8bcb-c01f109f7bdb.png" width="75%">
+<img src ="https://user-images.githubusercontent.com/17795014/56511517-5ee6e700-655f-11e9-9660-ca6d687ddd00.png" width="75%">
 
 ## Todo Items:
 
@@ -29,3 +29,12 @@ yarn pull // this pulls the model weights hosted on the web
 yarn start
 ```
 Then open http://127.0.0.1:3000 in a web browser.
+
+## License
+
+MIT License, Copyright © 2019 Sneha Belkhale
+
+However, if you are using the original dataset for commercial purposes, you should read the copyright information from the original <a href ="https://github.com/sebastianstarke/AI4Animation">AI4Animation</a> project. 
+
+
+
