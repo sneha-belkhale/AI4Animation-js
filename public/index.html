@@ -10,6 +10,7 @@
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json">
     <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico">
+    <link href="https://fonts.googleapis.com/css?family=Quicksand" rel="stylesheet">
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -21,7 +22,43 @@
     -->
     <title>AI Animation</title>
     <style>
-      #description-block {
+      .controls-block {
+        display: none;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        position: absolute;
+        width: 100%;
+        bottom: 10px;
+        z-index: 999;
+      }
+
+      .row {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .button {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 70px;
+        height: 70px;
+        margin: 4px;
+        border-color: white;
+        border-radius: 7px;
+        border-width: 1px;
+        border-style: solid;
+        color: white;
+        font-family: 'Quicksand', sans-serif;
+        font-size: 20px;
+      }
+
+      .button.pressed {
+        background-color:#ffffff;
+      }
+
+      .description-block {
         display: flex;
         flex-direction: column;
         position: absolute;
@@ -38,6 +75,7 @@
         border-width: 1px;
         font-size: 15px;
       }
+
       p {
         background-color: transparent;
         font-family: monospace;
@@ -45,11 +83,29 @@
         color: #f0fbff;
         font-size: 15px;
       }
+
       a {
-        color: #ff1105;
+        color: #ff1105;;
       }
+
       canvas {
         display: block;
+      }
+
+      @media screen and (max-width: 800px) {
+        .description-block {
+          display: none;
+        }
+        .controls-block {
+          display: flex;
+        }
+      }
+      @media screen and (min-width: 800px) and (max-width: 1025px) {
+        .controls-block {
+          display: flex;
+          align-items: flex-end;
+          right: 10px;
+        }
       }
     </style>
   </head>
@@ -58,7 +114,15 @@
       You need to enable JavaScript to run this app.
     </noscript>
 
-    <div id="description-block">
+    <div class="controls-block">
+      <div class="row">
+        <div class="button" id="a">←</div>
+        <div class="button" id="w">↑</div>
+        <div class="button" id="d">→</div>
+      </div>
+    </div>
+
+    <div class="description-block">
       <div class="description-text">
         This project is a port of <a href="https://github.com/sebastianstarke/AI4Animation" target="_blank">AI4Animation</a>
         for three.js -- using machine learning to generate realtime character animations,
