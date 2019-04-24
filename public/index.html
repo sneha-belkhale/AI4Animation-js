@@ -19,60 +19,61 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>React App</title>
+    <title>AI Animation</title>
     <style>
-    #description {
-      position: absolute;
-      width: 355px;
-      height: 235px;
-      bottom: 30px;
-      left: 30px;
-      padding: 18px;
-      background-color: transparent;
-      font-family: monospace;
-      color: #f0fbff;
-      border-style: solid;
-      border-width: 1px;
-      font-size: 15px;
-    }
-    p {
-      background-color: transparent;
-      font-family: monospace;
-      text-align: right;
-      color: #f0fbff;
-      font-size: 15px;
-    }
-    a {
-      color: #ff1105;
-    }
-    canvas {
-      display: block;
-    }
+      #description-block {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        max-width: 400px;
+        max-height: 300px;
+        bottom: 30px;
+        margin-left: 30px;
+        margin-right: 30px;
+        padding: 18px;
+        background-color: transparent;
+        font-family: monospace;
+        color: #f0fbff;
+        border-style: solid;
+        border-width: 1px;
+        font-size: 15px;
+      }
+      p {
+        background-color: transparent;
+        font-family: monospace;
+        text-align: right;
+        color: #f0fbff;
+        font-size: 15px;
+      }
+      a {
+        color: #ff1105;
+      }
+      canvas {
+        display: block;
+      }
     </style>
   </head>
   <body>
     <noscript>
       You need to enable JavaScript to run this app.
     </noscript>
-    <script src="inflate.min.js"></script>
-    <div id="root"></div>
-    <div id="description">
-      This project is a port of <a href="https://github.com/sebastianstarke/AI4Animation" target="_blank">AI4Animation</a>
-      for three.js -- using machine learning to generate realtime character animations,
-      simply by providing a trajectory path for the character. <br> <br> This technique is very powerful as it allows for an unlimited
-      number of realistic transitions between animation states. <br> <br> Code for example posted
-      <a href="https://github.com/sneha-belkhale/AI4Animation-js" target="_blank">here</a>.
-      <br> <br> Use <b> A W D </b> keys to move.
+
+    <div id="description-block">
+      <div class="description-text">
+        This project is a port of <a href="https://github.com/sebastianstarke/AI4Animation" target="_blank">AI4Animation</a>
+        for three.js -- using machine learning to generate realtime character animations,
+        simply by providing a trajectory path for the character. <br> <br> This technique is very powerful as it allows for an
+        unlimited
+        number of realistic transitions between animation states. <br> <br> Code for example posted <a
+          href="https://github.com/sneha-belkhale/AI4Animation-js" target="_blank">here</a>.
+        <br> <br> Use <b> A W D </b> keys to move.
+      </div>
     </div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+    <div id="root"></div>
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
+    <!-- Helper for decoding FBX binary format -->
+    <script src="inflate.min.js"></script>
+
   </body>
 </html>
