@@ -63,8 +63,8 @@
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",
     "test": "node scripts/test.js --env=jsdom",
-    "lint": "node_modules/.bin/eslint .",
-    "lint:fix": "node_modules/.bin/eslint . --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "pull": "(mkdir src/NN_Wolf_MANN && cd src/NN_Wolf_MANN && curl -O http://www.starke-consult.de/UoE/GitHub/SIGGRAPH_2018/NN_Wolf_MANN.zip && unzip NN_Wolf_MANN)"
   },
   "devDependencies": {
@@ -135,5 +135,14 @@
   },
   "eslintConfig": {
     "extends": "react-app"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sneha-belkhale/AI4Animation-js.git"
+  },
+  "author": "@sneha-belkhale",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sneha-belkhale/AI4Animation-js/issues"
   }
 }
