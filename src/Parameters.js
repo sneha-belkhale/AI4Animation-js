@@ -2,7 +2,7 @@ import * as nj from 'numjs';
 
 export default class Parameters {
   static async Load(name, rows, cols) {
-    const mat = nj.zeros([rows, cols]);
+    const mat = nj.zeros([rows, cols], 'float32');
     // eslint-disable-next-line
     const response = await fetch(require(`./NN_Wolf_MANN${name}`));
     const buffer = await response.arrayBuffer();
@@ -16,7 +16,7 @@ export default class Parameters {
   }
 
   static initMatrix(rows, cols) {
-    const mat = nj.zeros([rows, cols]);
+    const mat = nj.zeros([rows, cols], 'float32');
     return mat;
   }
 }
