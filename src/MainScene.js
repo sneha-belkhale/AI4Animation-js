@@ -133,9 +133,9 @@ export default async function initWebScene() {
   stats = new Stats();
   stats.showPanel(0);
 
-  if (debugMode) {
-    document.body.appendChild(stats.dom);
-  }
+  document.body.appendChild(stats.dom);
+  console.log(stats);
+  stats.dom.hidden = true;
 
   // keyboard events
   window.addEventListener('keydown', (event) => {
@@ -448,6 +448,7 @@ function setDebugMode() {
   scene.add(debugGround);
   wolf.setDebugMode();
   debugMode = true;
+  stats.dom.hidden = false;
 }
 
 function setDemoMode() {
@@ -456,4 +457,5 @@ function setDemoMode() {
   scene.add(reflectiveGround);
   wolf.setDemoMode();
   debugMode = false;
+  stats.dom.hidden = true;
 }
