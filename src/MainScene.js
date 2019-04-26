@@ -29,7 +29,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 const Z_AXIS = new THREE.Vector3(0, 0, 3);
 
 let scene; let camera; let renderer; let composer; let trajectory; let NN; let stats; let wolf; let
-  keyHoldTime = 0; let light; let bottomLight; let lastTime = 0; let keyDownEvent; let tunnelMesh;
+  keyHoldTime = 0; let light; let bottomLight; let lastTime = 0; let keyInput; let tunnelMesh;
 let debugGround; let reflectiveGround; let debugMode;
 
 const temps = {
@@ -126,19 +126,43 @@ export default async function initWebScene() {
   NN = new NeuralNet();
   await NN.loadParameters();
 
-  // Trajectory
+  // trajectory
   trajectory = new Trajectory(scene);
 
   // stats
   stats = new Stats();
   stats.showPanel(0);
-  document.body.appendChild(stats.dom);
 
-  // key events
+  if (debugMode) {
+    document.body.appendChild(stats.dom);
+  }
+
+  // keyboard events
   window.addEventListener('keydown', (event) => {
-    keyDownEvent = event;
+    keyInput = event.key;
   });
+
   window.addEventListener('keyup', resetTrajectory);
+
+  // touch events
+  const buttons = document.querySelectorAll('.button');
+
+  for (let i = 0; i < buttons.length; i += 1) {
+    const button = buttons[i];
+
+    /* eslint-disable-next-line no-loop-func */
+    button.addEventListener('touchstart', (event) => {
+      keyInput = event.target.id;
+      button.classList.add('pressed');
+      event.preventDefault();
+    });
+
+    button.addEventListener('touchend', () => {
+      button.classList.remove('pressed');
+      resetTrajectory();
+    });
+  }
+
   update();
 
   // gui for toggling debug mode
@@ -160,7 +184,7 @@ export default async function initWebScene() {
 function resetTrajectory() {
   keyHoldTime = 0;
   lastTime = 0;
-  keyDownEvent = null;
+  keyInput = null;
   resetTrajectoryStyles();
 }
 
@@ -209,11 +233,11 @@ function predictTrajectory() {
   const rootQuat = trajectory.points[ROOT_POINT_INDEX].quaternion;
 
   let quat;
-  if (keyDownEvent.key === 'w') {
+  if (keyInput === 'w') {
     quat = null;
-  } else if (keyDownEvent.key === 'a') {
+  } else if (keyInput === 'a') {
     quat = new THREE.Quaternion().setFromAxisAngle(UP, 1 / FRAMERATE);
-  } else if (keyDownEvent.key === 'd') {
+  } else if (keyInput === 'd') {
     quat = new THREE.Quaternion().setFromAxisAngle(UP, -1 / FRAMERATE);
   } else {
     return;
@@ -243,9 +267,11 @@ function predictTrajectory() {
 }
 
 function update() {
-  stats.begin();
+  if (debugMode) {
+    stats.begin();
+  }
 
-  if (keyDownEvent) {
+  if (keyInput) {
     predictTrajectory();
   } else {
     rotateIdleStyles();
@@ -410,7 +436,10 @@ function update() {
   }
   start += JOINT_DIM_OUT * wolf.BONES.length;
   wolf.update(trajectory.getDirection(ROOT_POINT_INDEX));
-  stats.end();
+
+  if (debugMode) {
+    stats.end();
+  }
 }
 
 function setDebugMode() {
