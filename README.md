@@ -11,16 +11,19 @@ If you want to use a different skeleton, you will need to get motion capture dat
 
 <img src ="https://user-images.githubusercontent.com/17795014/56511517-5ee6e700-655f-11e9-9660-ca6d687ddd00.png" width="75%">
 
-## Todo Items:
+## Todo Items
 
 - An example with a human skeleton. 
 - Trying a simpler machine learning model to help with the fps. 
+
+## Discord chat
+https://discord.gg/UXypcZV
 
 ## Live Demo
 
 https://codercat.tk/ai-animation/
 
-## Run the demo yourself: 
+## Run the demo yourself
 
 Run the following commands:
 ```
