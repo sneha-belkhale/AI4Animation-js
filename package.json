@@ -65,7 +65,7 @@
     "test": "node scripts/test.js --env=jsdom",
     "lint": "node_modules/.bin/eslint .",
     "lint:fix": "node_modules/.bin/eslint . --fix",
-    "pull": "(mkdir src/NN_Wolf_MANN && cd src/NN_Wolf_MANN && curl -O http://www.starke-consult.de/UoE/GitHub/SIGGRAPH_2018/NN_Wolf_MANN.zip && unzip NN_Wolf_MANN)"
+    "pull": "mkdir src/NN_Wolf_MANN && cd src/NN_Wolf_MANN && curl -O http://www.starke-consult.de/UoE/GitHub/SIGGRAPH_2018/NN_Wolf_MANN.zip && unzip NN_Wolf_MANN"
   },
   "devDependencies": {
     "eslint-config-airbnb": "^17.1.0",
