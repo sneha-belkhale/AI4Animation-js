@@ -10,6 +10,7 @@
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json">
     <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico">
+    <link href="https://fonts.googleapis.com/css?family=Quicksand" rel="stylesheet">
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -19,60 +20,124 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>React App</title>
+    <title>AI Animation</title>
     <style>
-    #description {
-      position: absolute;
-      width: 355px;
-      height: 235px;
-      bottom: 30px;
-      left: 30px;
-      padding: 18px;
-      background-color: transparent;
-      font-family: monospace;
-      color: #f0fbff;
-      border-style: solid;
-      border-width: 1px;
-      font-size: 15px;
-    }
-    p {
-      background-color: transparent;
-      font-family: monospace;
-      text-align: right;
-      color: #f0fbff;
-      font-size: 15px;
-    }
-    a {
-      color: #ff1105;
-    }
-    canvas {
-      display: block;
-    }
+      .controls-block {
+        display: none;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        position: absolute;
+        width: 100%;
+        bottom: 10px;
+        z-index: 999;
+      }
+
+      .row {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .button {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 70px;
+        height: 70px;
+        margin: 4px;
+        border-color: white;
+        border-radius: 7px;
+        border-width: 1px;
+        border-style: solid;
+        color: white;
+        font-family: 'Quicksand', sans-serif;
+        font-size: 20px;
+      }
+
+      .button.pressed {
+        background-color:#ffffff;
+      }
+
+      .description-block {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        max-width: 400px;
+        max-height: 300px;
+        bottom: 30px;
+        margin-left: 30px;
+        margin-right: 30px;
+        padding: 18px;
+        background-color: transparent;
+        font-family: monospace;
+        color: #f0fbff;
+        border-style: solid;
+        border-width: 1px;
+        font-size: 15px;
+      }
+
+      p {
+        background-color: transparent;
+        font-family: monospace;
+        text-align: right;
+        color: #f0fbff;
+        font-size: 15px;
+      }
+
+      a {
+        color: #ff1105;;
+      }
+
+      canvas {
+        display: block;
+      }
+
+      @media screen and (max-width: 800px) {
+        .description-block {
+          display: none;
+        }
+        .controls-block {
+          display: flex;
+        }
+      }
+      @media screen and (min-width: 800px) and (max-width: 1025px) {
+        .controls-block {
+          display: flex;
+          align-items: flex-end;
+          right: 10px;
+        }
+      }
     </style>
   </head>
   <body>
     <noscript>
       You need to enable JavaScript to run this app.
     </noscript>
-    <script src="inflate.min.js"></script>
-    <div id="root"></div>
-    <div id="description">
-      This project is a port of <a href="https://github.com/sebastianstarke/AI4Animation" target="_blank">AI4Animation</a>
-      for three.js -- using machine learning to generate realtime character animations,
-      simply by providing a trajectory path for the character. <br> <br> This technique is very powerful as it allows for an unlimited
-      number of realistic transitions between animation states. <br> <br> Code for example posted
-      <a href="https://github.com/sneha-belkhale/AI4Animation-js" target="_blank">here</a>.
-      <br> <br> Use <b> A W D </b> keys to move.
+
+    <div class="controls-block">
+      <div class="row">
+        <div class="button" id="a">←</div>
+        <div class="button" id="w">↑</div>
+        <div class="button" id="d">→</div>
+      </div>
     </div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+    <div class="description-block">
+      <div class="description-text">
+        This project is a port of <a href="https://github.com/sebastianstarke/AI4Animation" target="_blank">AI4Animation</a>
+        for three.js -- using machine learning to generate realtime character animations,
+        simply by providing a trajectory path for the character. <br> <br> This technique is very powerful as it allows for an
+        unlimited
+        number of realistic transitions between animation states. <br> <br> Code for example posted <a
+          href="https://github.com/sneha-belkhale/AI4Animation-js" target="_blank">here</a>.
+        <br> <br> Use <b> A W D </b> keys to move.
+      </div>
+    </div>
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
+    <div id="root"></div>
+
+    <!-- Helper for decoding FBX binary format -->
+    <script src="inflate.min.js"></script>
+
   </body>
 </html>
