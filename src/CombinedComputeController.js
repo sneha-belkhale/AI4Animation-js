@@ -8,6 +8,7 @@ export default class ComputeController {
     this.height = height;
     this.height1 = 512;
     this.height2 = 363;
+    this.height3 = 512;
 
     this.computeScene = new THREE.Scene();
     this.computeCamera = new THREE.Camera();
@@ -40,16 +41,18 @@ export default class ComputeController {
     this.computeScene.add(this.computeMesh);
     this.renderer = new THREE.WebGLRenderer();
   }
-  setTarget(out1, out2) {
+  setTarget(out1, out2, out3) {
     var b = out1.selection.data.byteLength;
-    this.outBuffer = new ArrayBuffer(out1.selection.data.byteLength + out2.selection.data.byteLength);
+    var c = out2.selection.data.byteLength;
+    this.outBuffer = new ArrayBuffer(out1.selection.data.byteLength + out2.selection.data.byteLength + this.height3*this.width*4);
     this.outBufferView = new Float32Array(this.outBuffer);
     out1.selection.data = new Float32Array(this.outBuffer, 0, b/4);
-    out2.selection.data = new Float32Array(this.outBuffer, b);
+    out2.selection.data = new Float32Array(this.outBuffer, b, c/4);
+    out3.selection.data = new Float32Array(this.outBuffer, b+c);
     this.out2 = out2;
     this.out1 = out1;
   }
-  setWeightData(weightArray1, weightArray2) {
+  setWeightData(weightArray1, weightArray2, weightArray3) {
     weightArray1.forEach((weight, index) => {
       const c = index;
       for (let i = 0; i < this.width * this.height1; i += 1) {
@@ -69,6 +72,17 @@ export default class ComputeController {
         const d = c % 2;
         this.positionBuffer[
           4 * ((row+this.height1) * this.width * 2 + col + d * this.width) + Math.floor(c / 2)
+        ] = weight.selection.data[i];
+      }
+    });
+    weightArray3.forEach((weight, index) => {
+      const c = index;
+      for (let i = 0; i < this.width * this.height3; i += 1) {
+        const row = Math.floor(i / this.width);
+        const col = i - row * this.width;
+        const d = c % 2;
+        this.positionBuffer[
+          4 * ((row+this.height1+this.height2) * this.width * 2 + col + d * this.width) + Math.floor(c / 2)
         ] = weight.selection.data[i];
       }
     });
