@@ -2,10 +2,13 @@ import * as THREE from 'three';
 import ComputeShaders from './shaders/ComputeShader';
 
 export default class ComputeController {
-  constructor(width, height, out) {
+  constructor(width, height) {
 
     this.width = width;
     this.height = height;
+    this.height1 = 512;
+    this.height2 = 363;
+
     this.computeScene = new THREE.Scene();
     this.computeCamera = new THREE.Camera();
     this.computeCamera.position.z = 1;
@@ -37,20 +40,35 @@ export default class ComputeController {
     this.computeScene.add(this.computeMesh);
     this.renderer = new THREE.WebGLRenderer();
   }
-  setTarget(out) {
-    this.outBuffer = new ArrayBuffer(out.selection.data.byteLength);
+  setTarget(out1, out2) {
+    var b = out1.selection.data.byteLength;
+    this.outBuffer = new ArrayBuffer(out1.selection.data.byteLength + out2.selection.data.byteLength);
     this.outBufferView = new Float32Array(this.outBuffer);
-    out.selection.data = new Float32Array(this.outBuffer)
+    out1.selection.data = new Float32Array(this.outBuffer, 0, b/4);
+    out2.selection.data = new Float32Array(this.outBuffer, b);
+    this.out2 = out2;
+    this.out1 = out1;
   }
-  setWeightData(weightArray) {
-    weightArray.forEach((weight, index) => {
+  setWeightData(weightArray1, weightArray2) {
+    weightArray1.forEach((weight, index) => {
       const c = index;
-      for (let i = 0; i < this.width * this.height; i += 1) {
+      for (let i = 0; i < this.width * this.height1; i += 1) {
         const row = Math.floor(i / this.width);
         const col = i - row * this.width;
         const d = c % 2;
         this.positionBuffer[
           4 * (row * this.width * 2 + col + d * this.width) + Math.floor(c / 2)
+        ] = weight.selection.data[i];
+      }
+    });
+    weightArray2.forEach((weight, index) => {
+      const c = index;
+      for (let i = 0; i < this.width * this.height2; i += 1) {
+        const row = Math.floor(i / this.width);
+        const col = i - row * this.width;
+        const d = c % 2;
+        this.positionBuffer[
+          4 * ((row+this.height1) * this.width * 2 + col + d * this.width) + Math.floor(c / 2)
         ] = weight.selection.data[i];
       }
     });
@@ -64,7 +82,7 @@ export default class ComputeController {
     this.computeMesh.material.uniforms.weightTex.value = this.positionDataTex;
   }
 
-  compute(byArray, out) {
+  compute(byArray) {
     this.computeMesh.material.uniforms.experts1.value.set(
       byArray[0], byArray[1], byArray[2], byArray[3],
     );

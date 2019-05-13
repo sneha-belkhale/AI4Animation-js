@@ -4,6 +4,7 @@ import Eigen from './Eigen';
 import * as THREE from 'three';
 // import ComputeShaders from './shaders/ComputeShader'
 import ComputeController from './ComputeController'
+import CombinedComputeController from './CombinedComputeController'
 import * as nj from 'numjs';
 
 export default class NeuralNet {
@@ -19,8 +20,9 @@ export default class NeuralNet {
       395, 341, 342, 343, 84, 85, 86, 87, 88, 89, 90];
 
     this.computeW0 = new ComputeController(480, 512);
-    this.computeW1 = new ComputeController(512, 512);
-    this.computeW2 = new ComputeController(512, 363);
+    // this.computeW1 = new ComputeController(512, 512);
+    // this.computeW2 = new ComputeController(512, 363);
+    this.combinedCompute = new CombinedComputeController(512, 512+363);
 
   }
 
@@ -86,9 +88,10 @@ export default class NeuralNet {
         }
       });
 
+      this.combinedCompute.setWeightData(w1Array, w2Array);
       this.computeW0.setWeightData(w0Array)
-      this.computeW1.setWeightData(w1Array)
-      this.computeW2.setWeightData(w2Array)
+      // this.computeW1.setWeightData(w1Array)
+      // this.computeW2.setWeightData(w2Array)
 
     });
 
@@ -99,6 +102,12 @@ export default class NeuralNet {
     this.W0 = Parameters.initMatrix(this.HDim, this.XDim, 'W0');
     this.W1 = Parameters.initMatrix(this.HDim, this.HDim, 'W1');
     this.W2 = Parameters.initMatrix(this.YDim, this.HDim, 'W2');
+
+    this.computeW0.setTarget(this.W0)
+    this.combinedCompute.setTarget(this.W1, this.W2);
+    // this.computeW1.setTarget(this.W1)
+    // this.computeW2.setTarget(this.W2)
+
     this.b0 = Parameters.initMatrix(this.HDim, 1, 'b0');
     this.b1 = Parameters.initMatrix(this.HDim, 1, 'b1');
     this.b2 = Parameters.initMatrix(this.YDim, 1, 'b2');
@@ -134,8 +143,9 @@ export default class NeuralNet {
       Generate Network Weights
     */
     this.computeW0.compute(byArray, this.W0);
-    this.computeW1.compute(byArray, this.W1);
-    this.computeW2.compute(byArray, this.W2);
+    this.combinedCompute.compute(byArray);
+    // this.computeW1.compute(byArray, this.W1);
+    // this.computeW2.compute(byArray, this.W2);
     for (let i = 0; i < this.YDimBlend; i += 1) {
       const weight = this.BY.get(i, 0);
       Eigen.Blend(this.b0, this.CW[6 * i + 1], weight);
