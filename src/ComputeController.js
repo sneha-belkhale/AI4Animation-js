@@ -2,8 +2,7 @@ import * as THREE from 'three';
 import ComputeShaders from './shaders/ComputeShader';
 
 export default class ComputeController {
-  constructor(width, height, out) {
-
+  constructor(width, height) {
     this.width = width;
     this.height = height;
     this.computeScene = new THREE.Scene();
@@ -37,11 +36,13 @@ export default class ComputeController {
     this.computeScene.add(this.computeMesh);
     this.renderer = new THREE.WebGLRenderer();
   }
+
   setTarget(out) {
     this.outBuffer = new ArrayBuffer(out.selection.data.byteLength);
     this.outBufferView = new Float32Array(this.outBuffer);
-    out.selection.data = new Float32Array(this.outBuffer)
+    out.selection.data = new Float32Array(this.outBuffer);
   }
+
   setWeightData(weightArray) {
     weightArray.forEach((weight, index) => {
       const c = index;
@@ -64,7 +65,7 @@ export default class ComputeController {
     this.computeMesh.material.uniforms.weightTex.value = this.positionDataTex;
   }
 
-  compute(byArray, out) {
+  compute(byArray) {
     this.computeMesh.material.uniforms.experts1.value.set(
       byArray[0], byArray[1], byArray[2], byArray[3],
     );

@@ -3,7 +3,6 @@ import ComputeShaders from './shaders/ComputeShader';
 
 export default class ComputeController {
   constructor(width, height) {
-
     this.width = width;
     this.height = height;
     this.height1 = 512;
@@ -41,17 +40,20 @@ export default class ComputeController {
     this.computeScene.add(this.computeMesh);
     this.renderer = new THREE.WebGLRenderer();
   }
+
   setTarget(out1, out2, out3) {
-    var b = out1.selection.data.byteLength;
-    var c = out2.selection.data.byteLength;
-    this.outBuffer = new ArrayBuffer(out1.selection.data.byteLength + out2.selection.data.byteLength + this.height3*this.width*4);
+    const b = out1.selection.data.byteLength;
+    const c = out2.selection.data.byteLength;
+    this.outBuffer = new ArrayBuffer(out1.selection.data.byteLength
+      + out2.selection.data.byteLength + this.height3 * this.width * 4);
     this.outBufferView = new Float32Array(this.outBuffer);
-    out1.selection.data = new Float32Array(this.outBuffer, 0, b/4);
-    out2.selection.data = new Float32Array(this.outBuffer, b, c/4);
-    out3.selection.data = new Float32Array(this.outBuffer, b+c);
+    out1.selection.data = new Float32Array(this.outBuffer, 0, b / 4);
+    out2.selection.data = new Float32Array(this.outBuffer, b, c / 4);
+    out3.selection.data = new Float32Array(this.outBuffer, b + c);
     this.out2 = out2;
     this.out1 = out1;
   }
+
   setWeightData(weightArray1, weightArray2, weightArray3) {
     weightArray1.forEach((weight, index) => {
       const c = index;
@@ -71,7 +73,7 @@ export default class ComputeController {
         const col = i - row * this.width;
         const d = c % 2;
         this.positionBuffer[
-          4 * ((row+this.height1) * this.width * 2 + col + d * this.width) + Math.floor(c / 2)
+          4 * ((row + this.height1) * this.width * 2 + col + d * this.width) + Math.floor(c / 2)
         ] = weight.selection.data[i];
       }
     });
@@ -82,7 +84,8 @@ export default class ComputeController {
         const col = i - row * this.width;
         const d = c % 2;
         this.positionBuffer[
-          4 * ((row+this.height1+this.height2) * this.width * 2 + col + d * this.width) + Math.floor(c / 2)
+          4 * ((row + this.height1 + this.height2) * this.width * 2 + col + d * this.width)
+          + Math.floor(c / 2)
         ] = weight.selection.data[i];
       }
     });
